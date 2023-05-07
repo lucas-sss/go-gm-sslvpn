@@ -1,0 +1,71 @@
+# github.com/gobwas/httphead v0.1.0
+## explicit; go 1.15
+github.com/gobwas/httphead
+# github.com/gobwas/pool v0.2.1
+## explicit
+github.com/gobwas/pool
+github.com/gobwas/pool/internal/pmath
+github.com/gobwas/pool/pbufio
+# github.com/gobwas/ws v1.2.0
+## explicit; go 1.15
+github.com/gobwas/ws
+# github.com/golang/snappy v0.0.4
+## explicit
+github.com/golang/snappy
+# github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
+## explicit; go 1.12
+github.com/inhies/go-bytesize
+# github.com/net-byte/go-gateway v0.0.2
+## explicit; go 1.18
+github.com/net-byte/go-gateway
+# github.com/net-byte/vtun v1.7.0
+## explicit; go 1.18
+github.com/net-byte/vtun/common/config
+github.com/net-byte/vtun/common/counter
+github.com/net-byte/vtun/common/netutil
+# github.com/net-byte/water v0.0.9
+## explicit; go 1.18
+github.com/net-byte/water
+# github.com/patrickmn/go-cache v2.1.0+incompatible
+## explicit
+github.com/patrickmn/go-cache
+# github.com/tjfoc/gmsm v1.4.1
+## explicit; go 1.14
+github.com/tjfoc/gmsm/gmtls
+github.com/tjfoc/gmsm/sm2
+github.com/tjfoc/gmsm/sm3
+github.com/tjfoc/gmsm/sm4
+github.com/tjfoc/gmsm/x509
+# golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
+## explicit; go 1.17
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/chacha20poly1305
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/curve25519/internal/field
+golang.org/x/crypto/internal/poly1305
+golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/ripemd160
+golang.org/x/crypto/sha3
+# golang.org/x/net v0.0.0-20220725212005-46097bf591d3
+## explicit; go 1.17
+golang.org/x/net/bpf
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+golang.org/x/net/ipv6
+# golang.org/x/sys v0.6.0
+## explicit; go 1.17
+golang.org/x/sys/cpu
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+# golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224
+## explicit; go 1.17
+golang.zx2c4.com/wintun
+# golang.zx2c4.com/wireguard v0.0.0-20220703234212-c31a7b1ab478
+## explicit; go 1.18
+golang.zx2c4.com/wireguard/rwcancel
+golang.zx2c4.com/wireguard/tun
+# golang.zx2c4.com/wireguard/windows v0.5.3
+## explicit; go 1.18
+golang.zx2c4.com/wireguard/windows/tunnel/winipcfg
