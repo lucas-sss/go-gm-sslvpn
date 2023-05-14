@@ -2,11 +2,18 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-07 21:55:40
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-14 11:11:59
+ * @LastEditTime: 2023-05-14 22:55:45
  * @FilePath: /gmvpn/common/config/config.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 package config
+
+import "gmvpn/common"
+
+type VipInfo struct {
+	Used bool
+	Id   string //每个客户端的标识
+}
 
 // The config struct
 type Config struct {
@@ -36,6 +43,9 @@ type Config struct {
 	Route  []string //推送客户端的ipv4路由
 	Route6 []string //推送客户端的ipv6路由
 
+	//*********** 二次生成配置 ***********//
+	VipList []string
+	VipPool *common.RWMutexMap
 	//本地网关
 	LocalGateway  string
 	LocalGateway6 string

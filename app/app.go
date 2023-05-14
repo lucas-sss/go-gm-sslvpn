@@ -2,7 +2,7 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-07 22:09:30
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-14 12:28:57
+ * @LastEditTime: 2023-05-14 23:23:38
  * @FilePath: /gmvpn/app/app.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -13,6 +13,7 @@ import (
 	"net"
 	"strconv"
 
+	"gmvpn/common"
 	"gmvpn/tun"
 
 	"gmvpn/common/config"
@@ -61,9 +62,32 @@ func (app *App) InitConfig() {
 		log.Panicln("illegal app config")
 	}
 
-	//TODO 如果时服务端生产ip池
+	// 如果时服务端生产ip池
 	if app.Config.ServerMode {
+		//解析虚拟网络地址
+		_, net, _ := net.ParseCIDR(app.Config.CIDR)
+		first, end := netutil.IpNetRange(net)
+		ipv4FirstInt := netutil.IPv4ToInt(first)
+		ipv4EndInt := netutil.IPv4ToInt(end)
+		sVip, _ := netutil.IntToIPv4(ipv4FirstInt + 1)
+		vipPoolBegin, _ := netutil.IntToIPv4(ipv4FirstInt + 2)
+		vipPoolEnd, _ := netutil.IntToIPv4(ipv4EndInt - 1)
+		vipPoolSize := ipv4EndInt - ipv4FirstInt - 2
+		log.Printf("vip info: svip: %s, vip pool begin: %s, vipPool end: %s, vip pool size: %d", sVip, vipPoolBegin, vipPoolEnd, vipPoolSize)
 
+		//初始化虚拟ip池
+		vipList := make([]string, vipPoolSize)
+		app.Config.VipPool = common.NewRWMutexMap(int(vipPoolSize))
+
+		for i := ipv4FirstInt + 2; i < netutil.IPv4ToInt(end); i++ {
+			vip, _ := netutil.IntToIPv4(i)
+			vipInfo := new(config.VipInfo)
+			vipInfo.Used = false
+
+			vipList = append(vipList, vip)
+			app.Config.VipPool.Set(vip, *vipInfo)
+		}
+		app.Config.VipList = vipList
 	}
 }
 
@@ -78,20 +102,19 @@ func serverCreateTun(appCfg *config.Config) (*water.Interface, *tun.TunConfig) {
 
 func generateTunConfig(appCfg config.Config) *tun.TunConfig {
 	_, net, _ := net.ParseCIDR(appCfg.CIDR)
-	prefixLen, _ := net.Mask.Size()
+	mask, _ := net.Mask.Size()
 	tunCfg := &tun.TunConfig{}
 	first, _ := netutil.IpNetRange(net)
 	svip, _ := netutil.IntToIPv4(netutil.IPv4ToInt(first) + 1)
 
 	tunCfg.Device = appCfg.Device
-	tunCfg.PrefixLen = prefixLen
+	tunCfg.Mask = mask
 	tunCfg.SVip = svip //第一个地址默认为服务端虚拟ip
-	tunCfg.Cidr = svip + "/" + strconv.Itoa(prefixLen)
-	tunCfg.Cidr = svip + "/" + strconv.Itoa(prefixLen)
+	tunCfg.Cidr = svip + "/" + strconv.Itoa(mask)
+	tunCfg.PrefixLen = mask
 	tunCfg.Mtu = appCfg.MTU
 	tunCfg.LocalGateway = appCfg.LocalGateway
 	tunCfg.LocalGateway6 = appCfg.LocalGateway6
-
 	return tunCfg
 }
 

@@ -14,9 +14,10 @@ import (
 type TunConfig struct {
 	ServerMode    bool   `json:"serverMode"`
 	Device        string `json:"device"`
-	PrefixLen     int    `json:"prefixLen"`
 	Cidr          string `json:"cidr"`  //ipv4网络地址
+	Mask          int    `json:"mask"`  //网络地址掩码
 	Cidr6         string `json:"cidr6"` //ipv6网络地址
+	PrefixLen     int    `json:"prefixLen"`
 	Mtu           int    `json:"mtu"`
 	LocalGateway  string `json:"localGateway"`  //本地默认ipv4网关
 	LocalGateway6 string `json:"localGateway6"` //本地默认ipv6网关

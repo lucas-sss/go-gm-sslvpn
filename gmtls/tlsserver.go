@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
 	"time"
 
+	"gmvpn/common"
 	"gmvpn/common/cache"
 	"gmvpn/common/config"
 	"gmvpn/common/counter"
@@ -22,6 +24,12 @@ import (
 	"github.com/tjfoc/gmsm/x509"
 )
 
+type ClientConn struct {
+	Vip string
+}
+
+var clientConnCache *common.RWMutexMap
+
 // StartServer starts the tls server
 func StartServer(iface *water.Interface, appCfg config.Config, tunCfg tun.TunConfig) {
 	defer func() {
@@ -29,6 +37,8 @@ func StartServer(iface *water.Interface, appCfg config.Config, tunCfg tun.TunCon
 		iface.Close()
 	}()
 	log.Printf("vtun tls server started on %v", appCfg.LocalAddr)
+
+	clientConnCache = common.NewRWMutexMap(1024)
 
 	//TLS
 	p := x509.NewCertPool()
@@ -81,24 +91,33 @@ func StartServer(iface *water.Interface, appCfg config.Config, tunCfg tun.TunCon
 		}
 		log.Println("receive client tls connect")
 		//向客户端推送路由配置
-		pushTunConfig(tunCfg, conn)
+		err = pushTunConfig(appCfg, tunCfg, conn)
+		if err != nil {
+			conn.Close()
+			continue
+		}
 		//推送路由
 		go pushRouteConfig(appCfg, tunCfg, conn)
 		go toServer(appCfg, conn, iface)
 	}
 }
 
-func pushTunConfig(serTunCfg tun.TunConfig, coon net.Conn) error {
-	log.Printf("push client tun config")
-	//TODO 为客户端分配虚拟ip
-	cvip := "10.9.0.10"
-	cidr := cvip + "/" + strconv.Itoa(serTunCfg.PrefixLen)
+func pushTunConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Conn) error {
+	log.Printf("push tun config")
+	// 为客户端分配虚拟ip
+	cvip, err := allocateVip(coon, appCfg)
+	if err != nil {
+		//TODO 推送vip不足消息
+		coon.Close()
+		return err
+	}
+	cidr := cvip + "/" + strconv.Itoa(serTunCfg.Mask)
 	clientTunCfg := tun.TunConfig{
-		PrefixLen:  serTunCfg.PrefixLen,
-		Cidr:       cidr,
 		Mtu:        serTunCfg.Mtu,
 		SVip:       serTunCfg.SVip,
 		CVip:       cvip,
+		Mask:       serTunCfg.Mask,
+		Cidr:       cidr,
 		GlobalMode: false,
 	}
 	cfg, err := json.Marshal(clientTunCfg)
@@ -118,6 +137,37 @@ func pushTunConfig(serTunCfg tun.TunConfig, coon net.Conn) error {
 	return nil
 }
 
+//分配虚拟ip
+func allocateVip(coon net.Conn, appCfg config.Config) (string, error) {
+	id := coon.RemoteAddr().String()
+	vipPool := appCfg.VipPool
+	vipList := appCfg.VipList
+	for _, vip := range vipList {
+		v, suc := vipPool.Get(vip)
+		if !suc {
+			continue
+		}
+		vipInfo := v.(config.VipInfo)
+		if vipInfo.Used {
+			continue
+		}
+		ok := vipPool.TrySet(vip, config.VipInfo{
+			Used: true,
+			Id:   id,
+		})
+		if !ok {
+			continue
+		}
+		log.Printf("conn[%s] allocate vip: %s", id, vip)
+		clientConn := ClientConn{Vip: vip}
+		//缓存客户端链接信息
+		clientConnCache.Set(id, clientConn)
+		return vip, nil
+	}
+	return "", fmt.Errorf("insufficient virtual ip")
+}
+
+//推送路由陪孩子
 func pushRouteConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Conn) error {
 	log.Printf("push route config")
 	routeCfg := tun.RouteConfig{
@@ -182,7 +232,15 @@ func toServer(config config.Config, tlsconn net.Conn, iface *water.Interface) {
 	for {
 		n, err := tlsconn.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, config.Verbose)
+			log.Println("read err, ", err)
+			if err == io.EOF {
+				//客户端关闭，释放vip
+				id := tlsconn.RemoteAddr().String()
+				if v, ok := clientConnCache.Get(id); ok {
+					clientConn := v.(ClientConn)
+					releaseVip(config, clientConn.Vip)
+				}
+			}
 			break
 		}
 		//解包
@@ -207,7 +265,7 @@ func toServer(config config.Config, tlsconn net.Conn, iface *water.Interface) {
 				cache.GetCache().Set(key, tlsconn, 24*time.Hour)
 				_, err := iface.Write(b)
 				if err != nil {
-					netutil.PrintErr(err, config.Verbose)
+					log.Println("server write to tun iface fail, ", err)
 					break
 				}
 				counter.IncrReadBytes(len(b))
@@ -222,4 +280,13 @@ func toServer(config config.Config, tlsconn net.Conn, iface *water.Interface) {
 			fmt.Println("unknown record")
 		}
 	}
+}
+
+func releaseVip(appCfg config.Config, vip string) {
+	log.Println("release vip: ", vip)
+	vipInfo := config.VipInfo{
+		Used: false,
+		Id:   "",
+	}
+	appCfg.VipPool.Set(vip, vipInfo)
 }
