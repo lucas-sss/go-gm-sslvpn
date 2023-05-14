@@ -101,14 +101,14 @@ func LookupIP(domain string) net.IP {
 	return ips[0]
 }
 
-// IsIPv4 returns true if the packet is IPv4s
-func IsIPv4(packet []byte) bool {
+// IsIPv4Packet returns true if the packet is IPv4s
+func IsIPv4Packet(packet []byte) bool {
 	flag := packet[0] >> 4
 	return flag == 4
 }
 
-// IsIPv6 returns true if the packet is IPv6s
-func IsIPv6(packet []byte) bool {
+// IsIPv6Packet returns true if the packet is IPv6s
+func IsIPv6Packet(packet []byte) bool {
 	flag := packet[0] >> 4
 	return flag == 6
 }
@@ -136,9 +136,9 @@ func GetIPv6Dst(packet []byte) net.IP {
 // GetSrcKey returns the source key of the packet
 func GetSrcKey(packet []byte) string {
 	key := ""
-	if IsIPv4(packet) && len(packet) >= 20 {
+	if IsIPv4Packet(packet) && len(packet) >= 20 {
 		key = GetIPv4Src(packet).To4().String()
-	} else if IsIPv6(packet) && len(packet) >= 40 {
+	} else if IsIPv6Packet(packet) && len(packet) >= 40 {
 		key = GetIPv6Src(packet).To16().String()
 	}
 	return key
@@ -147,9 +147,9 @@ func GetSrcKey(packet []byte) string {
 // GetdstKey returns the destination key of the packets
 func GetDstKey(packet []byte) string {
 	key := ""
-	if IsIPv4(packet) && len(packet) >= 20 {
+	if IsIPv4Packet(packet) && len(packet) >= 20 {
 		key = GetIPv4Dst(packet).To4().String()
-	} else if IsIPv6(packet) && len(packet) >= 40 {
+	} else if IsIPv6Packet(packet) && len(packet) >= 40 {
 		key = GetIPv6Dst(packet).To16().String()
 	}
 	return key
@@ -183,7 +183,11 @@ func DiscoverGateway(ipv4 bool) string {
 		log.Println(err)
 		return ""
 	}
-	return ip.String()
+	if ipv4 {
+		return ip.To4().String()
+	} else {
+		return ip.To16().String()
+	}
 }
 
 // LookupServerAddrIP returns the IP of server address

@@ -2,6 +2,8 @@ package tls
 
 import (
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"gmvpn/common/config"
 	"gmvpn/common/counter"
 	"gmvpn/common/netutil"
+	"gmvpn/tun"
 
 	"github.com/golang/snappy"
 	"github.com/net-byte/water"
@@ -18,38 +21,11 @@ import (
 	"github.com/tjfoc/gmsm/x509"
 )
 
+var gloablTunCfg tun.TunConfig
+
 // StartClient starts the tls client
-func StartClient(iface *water.Interface, config config.Config) {
+func StartClient(config config.Config) {
 	log.Println("vtun tls client started")
-	go tunToTLS(config, iface)
-	// tlsconfig := &tls.Config{
-	// 	InsecureSkipVerify: config.TLSInsecureSkipVerify,
-	// 	MinVersion:         tls.VersionTLS13,
-	// 	CurvePreferences:   []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-	// 	CipherSuites: []uint16{
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	// 		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-	// 		tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	// 		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-	// 		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-	// 	},
-	// }
-	// if config.TLSSni != "" {
-	// 	tlsconfig.ServerName = config.TLSSni
-	// }
-	// for {
-	// 	conn, err := tls.Dial("tcp", config.ServerAddr, tlsconfig)
-	// 	if err != nil {
-	// 		time.Sleep(3 * time.Second)
-	// 		netutil.PrintErr(err, config.Verbose)
-	// 		continue
-	// 	}
-	// 	cache.GetCache().Set("tlsconn", conn, 24*time.Hour)
-	// 	tlsToTun(config, conn, iface)
-	// 	cache.GetCache().Delete("tlsconn")
-	// }
 
 	// 信任的根证书
 	certPool := x509.NewCertPool()
@@ -74,17 +50,10 @@ func StartClient(iface *water.Interface, config config.Config) {
 		RootCAs:            certPool,
 		Certificates:       []gmtls.Certificate{signCert, encCert},
 		InsecureSkipVerify: config.TLSInsecureSkipVerify,
-		MinVersion:         gmtls.VersionGMSSL,
+		MinVersion:         tls.VersionTLS11,
 		MaxVersion:         gmtls.VersionGMSSL,
 		CipherSuites:       []uint16{gmtls.GMTLS_SM2_WITH_SM4_SM3},
 	}
-
-	// conn, err := gmtls.Dial("tcp", config.ServerAddr, cf)
-	// if err != nil {
-	// 	fmt.Printf("%s\r\n", err)
-	// 	return
-	// }
-	// defer conn.Close()
 
 	if config.TLSSni != "" {
 		cf.ServerName = config.TLSSni
@@ -96,24 +65,27 @@ func StartClient(iface *water.Interface, config config.Config) {
 			netutil.PrintErr(err, config.Verbose)
 			continue
 		}
+		log.Println("connect to server success")
 		cache.GetCache().Set("tlsconn", conn, 24*time.Hour)
-		tlsToTun(config, conn, iface)
+		tlsToTun(config, conn)
 		cache.GetCache().Delete("tlsconn")
 	}
 }
 
 // tunToTLS sends packets from tun to tls
-func tunToTLS(config config.Config, iface *water.Interface) {
-	packet := make([]byte, config.BufferSize)
+func tunToTLS(appCfg config.Config, iface *water.Interface) {
+	defer iface.Close()
+
+	packet := make([]byte, appCfg.BufferSize)
 	for {
 		n, err := iface.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, config.Verbose)
+			netutil.PrintErr(err, appCfg.Verbose)
 			break
 		}
 		if v, ok := cache.GetCache().Get("tlsconn"); ok {
 			b := packet[:n]
-			if config.Compress {
+			if appCfg.Compress {
 				b = snappy.Encode(nil, b)
 			}
 			//数据封包（添加类型和长度）
@@ -122,7 +94,7 @@ func tunToTLS(config config.Config, iface *water.Interface) {
 			conn := v.(*gmtls.Conn)
 			_, err = conn.Write(b)
 			if err != nil {
-				netutil.PrintErr(err, config.Verbose)
+				netutil.PrintErr(err, appCfg.Verbose)
 				continue
 			}
 			counter.IncrWrittenBytes(n)
@@ -131,63 +103,58 @@ func tunToTLS(config config.Config, iface *water.Interface) {
 }
 
 // tlsToTun sends packets from tls to tun
-func tlsToTun(config config.Config, tlsconn *gmtls.Conn, iface *water.Interface) {
-	defer tlsconn.Close()
-	packet := make([]byte, config.BufferSize)
+func tlsToTun(appCfg config.Config, tlsconn *gmtls.Conn) {
+	var iface *water.Interface
+	defer func() {
+		log.Println("close tls connection and tun interface")
+		tlsconn.Close()
+		if iface != nil {
+			iface.Close()
+		}
+	}()
+	packet := make([]byte, appCfg.BufferSize)
 	//存放未读取完整数据
 	tmpBuffer := make([]byte, 0)
 
 	for {
 		n, err := tlsconn.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, config.Verbose)
+			netutil.PrintErr(err, appCfg.Verbose)
 			break
 		}
-
-		// b := packet[:n]
-		// if config.Compress {
-		// 	b, err = snappy.Decode(nil, b)
-		// 	if err != nil {
-		// 		netutil.PrintErr(err, config.Verbose)
-		// 		break
-		// 	}
-		// }
-		// if config.Obfs {
-		// 	b = cipher.XOR(b)
-		// }
-		// _, err = iface.Write(b)
-		// if err != nil {
-		// 	netutil.PrintErr(err, config.Verbose)
-		// 	break
-		// }
-		// counter.IncrReadBytes(n)
-
 		//解包
 		var record []byte
 		tmpBuffer, record = Depack(append(tmpBuffer, packet[:n]...))
 		if bytes.Equal(record, []byte{}) {
 			continue
 		}
-
 		//解析数据类型
 		b := record[HEADER_LEN:]
 		t := record[:RECORD_TYPE_LEN]
 		if bytes.Equal(t, RECORD_TYPE_DATA) {
-			if config.Compress {
+			if iface == nil {
+				log.Println("iface is nil")
+				continue
+			}
+			if appCfg.Compress {
 				b, err = snappy.Decode(nil, b)
 				if err != nil {
-					netutil.PrintErr(err, config.Verbose)
+					netutil.PrintErr(err, appCfg.Verbose)
 					break
 				}
 			}
 			_, err = iface.Write(b)
 			if err != nil {
-				netutil.PrintErr(err, config.Verbose)
+				netutil.PrintErr(err, appCfg.Verbose)
 				break
 			}
 			counter.IncrReadBytes(n)
 		} else if bytes.Equal(t, RECORD_TYPE_CONTROL) {
-			fmt.Println("control record")
+			fmt.Println("control record type", b[:2])
+			ifaceNew := processCtlMsg(appCfg, b)
+			if ifaceNew != nil {
+				iface = ifaceNew
+			}
 		} else if bytes.Equal(t, RECORD_TYPE_AUTH) {
 			fmt.Println("auth record")
 		} else if bytes.Equal(t, RECORD_TYPE_ALARM) {
@@ -196,4 +163,40 @@ func tlsToTun(config config.Config, tlsconn *gmtls.Conn, iface *water.Interface)
 			fmt.Println("unknown record")
 		}
 	}
+}
+
+func processCtlMsg(appCfg config.Config, ctlMsg []byte) *water.Interface {
+	ctlType := ctlMsg[:2]
+	data := ctlMsg[2:]
+	log.Printf("control record: %s", string(data))
+	if bytes.Equal(ctlType, RECORD_TYPE_CONTROL_TUN_CONFIG) {
+		tunCfg := &tun.TunConfig{}
+		err := json.Unmarshal(data, tunCfg)
+		if err != nil {
+			log.Panic("server push tun config data error")
+		}
+		tunCfg.Device = appCfg.Device
+		tunCfg.ServerMode = false
+		tunCfg.LocalGateway = appCfg.LocalGateway
+		tunCfg.LocalGateway6 = appCfg.LocalGateway6
+		//创建tun网卡设备
+		iface := tun.CreatAndConfigTun(tunCfg)
+		//读取虚拟网卡数据
+		go tunToTLS(appCfg, iface)
+		gloablTunCfg = *tunCfg
+		return iface
+	} else if bytes.Equal(ctlType, RECORD_TYPE_CONTROL_PUSH_ROUTE) {
+		routeCfg := &tun.RouteConfig{}
+		err := json.Unmarshal(data, routeCfg)
+		if err != nil {
+			log.Panic("server push route config error")
+		}
+		routeCfg.Device = gloablTunCfg.Device
+		routeCfg.SVip = gloablTunCfg.SVip
+		routeCfg.SVip6 = gloablTunCfg.SVip6
+		go tun.ConfigRoute(*routeCfg)
+	} else {
+		log.Println("unknown control msg type: ", ctlType)
+	}
+	return nil
 }

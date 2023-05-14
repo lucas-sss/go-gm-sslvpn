@@ -2,7 +2,7 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-07 21:55:40
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-07 23:50:59
+ * @LastEditTime: 2023-05-14 11:11:59
  * @FilePath: /gmvpn/common/config/config.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -30,15 +30,14 @@ type Config struct {
 	TLSSni                    string //是否开启tls sni标识（多域名识别）
 	TLSInsecureSkipVerify     bool   //是否跳过证书验证
 	TLSCipher                 string //tls 密码套件
+	BufferSize                int
+	Verbose                   bool
 
-	BufferSize int
-	Verbose    bool
-	//*********** 二次生成配置 ***********//
-	//
-	ServerIP   string
-	ServerIPv6 string
-	//网关配置
-	LocalGateway   string
-	LocalGatewayv6 string
+	Route  []string //推送客户端的ipv4路由
+	Route6 []string //推送客户端的ipv6路由
+
+	//本地网关
+	LocalGateway  string
+	LocalGateway6 string
 	//*********** 二次生成配置 ***********//
 }

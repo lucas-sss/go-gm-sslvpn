@@ -2,7 +2,7 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-06 23:15:05
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-07 17:49:41
+ * @LastEditTime: 2023-05-14 10:09:57
  * @FilePath: /vtun/tls/protocol.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -20,10 +20,12 @@ const (
 )
 
 var (
-	RECORD_TYPE_DATA    = []byte{0x11, 0x11}
-	RECORD_TYPE_CONTROL = []byte{0x12, 0x11}
-	RECORD_TYPE_ALARM   = []byte{0x13, 0x11}
-	RECORD_TYPE_AUTH    = []byte{0x14, 0x11}
+	RECORD_TYPE_DATA               = []byte{0x11, 0x11}
+	RECORD_TYPE_CONTROL            = []byte{0x12, 0x11}
+	RECORD_TYPE_CONTROL_TUN_CONFIG = []byte{0x12, 0x12}
+	RECORD_TYPE_CONTROL_PUSH_ROUTE = []byte{0x12, 0x13}
+	RECORD_TYPE_ALARM              = []byte{0x13, 0x11}
+	RECORD_TYPE_AUTH               = []byte{0x14, 0x11}
 )
 
 //整形转换成字节
