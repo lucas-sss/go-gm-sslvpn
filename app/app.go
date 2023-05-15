@@ -2,7 +2,7 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-07 22:09:30
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-14 23:23:38
+ * @LastEditTime: 2023-05-16 00:23:28
  * @FilePath: /gmvpn/app/app.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -24,15 +24,14 @@ import (
 )
 
 var _banner = `
-_                 
-__ __  ___   _  _   _ _    __
-\ V / |  _| | || | | ' \  ||_||
- \_/  |_|    \_,_| |_||_| || ||
-                             //		 
-A simple SSL VPN for gm written in Go.
+ _ _                    _ __          
+/ _| |  _ __    __ __   | |_ \  _ _    
+\__, | | '  \   \ V /   | .__/ | ' \   
+|___/  |_|_|_|  _\_/_   |_|__  |_||_|   
+A simple SSLVPN for gm written in Go.
 %s
 `
-var _srcUrl = "xxxx"
+var _srcUrl = "https://github.com/lucas-sss/gmvpn"
 
 // vtun app struct
 type App struct {
