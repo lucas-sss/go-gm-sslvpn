@@ -122,46 +122,50 @@ func tlsToTun(appCfg config.Config, tlsconn *gmtls.Conn) {
 			netutil.PrintErr(err, appCfg.Verbose)
 			break
 		}
-		//解包
-		var record []byte
-		tmpBuffer, record = Depack(append(tmpBuffer, packet[:n]...))
-		if bytes.Equal(record, []byte{}) {
+		//解包处理
+		var records [][]byte
+		tmpBuffer, records = Depack(append(tmpBuffer, packet[:n]...))
+		if len(records) == 0 {
 			continue
 		}
-		//解析数据类型
-		b := record[HEADER_LEN:]
-		t := record[:RECORD_TYPE_LEN]
-		if bytes.Equal(t, RECORD_TYPE_DATA) {
-			if iface == nil {
-				log.Println("iface is nil")
-				continue
-			}
-			if appCfg.Compress {
-				b, err = snappy.Decode(nil, b)
+		for i := 0; i < len(records); i++ {
+			record := records[i]
+			//解析数据类型
+			b := record[HEADER_LEN:]
+			t := record[:RECORD_TYPE_LEN]
+			if bytes.Equal(t, RECORD_TYPE_DATA) {
+				if iface == nil {
+					log.Println("iface is nil")
+					continue
+				}
+				if appCfg.Compress {
+					b, err = snappy.Decode(nil, b)
+					if err != nil {
+						netutil.PrintErr(err, appCfg.Verbose)
+						break
+					}
+				}
+				_, err = iface.Write(b)
 				if err != nil {
 					netutil.PrintErr(err, appCfg.Verbose)
 					break
 				}
+				counter.IncrReadBytes(n)
+			} else if bytes.Equal(t, RECORD_TYPE_CONTROL) {
+				fmt.Println("control record type", b[:2])
+				ifaceNew := processCtlMsg(appCfg, b)
+				if ifaceNew != nil {
+					iface = ifaceNew
+				}
+			} else if bytes.Equal(t, RECORD_TYPE_AUTH) {
+				fmt.Println("auth record")
+			} else if bytes.Equal(t, RECORD_TYPE_ALARM) {
+				fmt.Println("alarm record")
+			} else {
+				fmt.Println("unknown record")
 			}
-			_, err = iface.Write(b)
-			if err != nil {
-				netutil.PrintErr(err, appCfg.Verbose)
-				break
-			}
-			counter.IncrReadBytes(n)
-		} else if bytes.Equal(t, RECORD_TYPE_CONTROL) {
-			fmt.Println("control record type", b[:2])
-			ifaceNew := processCtlMsg(appCfg, b)
-			if ifaceNew != nil {
-				iface = ifaceNew
-			}
-		} else if bytes.Equal(t, RECORD_TYPE_AUTH) {
-			fmt.Println("auth record")
-		} else if bytes.Equal(t, RECORD_TYPE_ALARM) {
-			fmt.Println("alarm record")
-		} else {
-			fmt.Println("unknown record")
 		}
+
 	}
 }
 

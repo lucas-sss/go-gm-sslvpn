@@ -244,40 +244,42 @@ func toServer(config config.Config, tlsconn net.Conn, iface *water.Interface) {
 			break
 		}
 		//解包
-		var record []byte
-		tmpBuffer, record = Depack(append(tmpBuffer, packet[:n]...))
-		if bytes.Equal(record, nil) {
+		var records [][]byte
+		tmpBuffer, records = Depack(append(tmpBuffer, packet[:n]...))
+		if len(records) == 0 {
 			continue
 		}
-		// 解析数据类型
-		b := record[HEADER_LEN:]
-		t := record[:RECORD_TYPE_LEN]
-		if bytes.Equal(t, RECORD_TYPE_DATA) {
-			// fmt.Println("data record")
-			if config.Compress {
-				b, err = snappy.Decode(nil, b)
-				if err != nil {
-					netutil.PrintErr(err, config.Verbose)
-					break
+		for i := 0; i < len(records); i++ {
+			record := records[i]
+			// 解析数据类型
+			b := record[HEADER_LEN:]
+			t := record[:RECORD_TYPE_LEN]
+			if bytes.Equal(t, RECORD_TYPE_DATA) {
+				if config.Compress {
+					b, err = snappy.Decode(nil, b)
+					if err != nil {
+						netutil.PrintErr(err, config.Verbose)
+						break
+					}
 				}
-			}
-			if key := netutil.GetSrcKey(b); key != "" {
-				cache.GetCache().Set(key, tlsconn, 24*time.Hour)
-				_, err := iface.Write(b)
-				if err != nil {
-					log.Println("server write to tun iface fail, ", err)
-					break
+				if key := netutil.GetSrcKey(b); key != "" {
+					cache.GetCache().Set(key, tlsconn, 24*time.Hour)
+					_, err := iface.Write(b)
+					if err != nil {
+						log.Println("server write to tun iface fail, ", err)
+						break
+					}
+					counter.IncrReadBytes(len(b))
 				}
-				counter.IncrReadBytes(len(b))
+			} else if bytes.Equal(t, RECORD_TYPE_CONTROL) {
+				fmt.Println("control record")
+			} else if bytes.Equal(t, RECORD_TYPE_AUTH) {
+				fmt.Println("auth record")
+			} else if bytes.Equal(t, RECORD_TYPE_ALARM) {
+				fmt.Println("alarm record")
+			} else {
+				fmt.Println("unknown record")
 			}
-		} else if bytes.Equal(t, RECORD_TYPE_CONTROL) {
-			fmt.Println("control record")
-		} else if bytes.Equal(t, RECORD_TYPE_AUTH) {
-			fmt.Println("auth record")
-		} else if bytes.Equal(t, RECORD_TYPE_ALARM) {
-			fmt.Println("alarm record")
-		} else {
-			fmt.Println("unknown record")
 		}
 	}
 }

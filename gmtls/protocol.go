@@ -2,7 +2,7 @@
  * @Author: liuwei lyy9645@163.com
  * @Date: 2023-05-06 23:15:05
  * @LastEditors: liuwei lyy9645@163.com
- * @LastEditTime: 2023-05-14 10:09:57
+ * @LastEditTime: 2023-05-16 00:16:46
  * @FilePath: /vtun/tls/protocol.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -51,11 +51,12 @@ func Enpack(body, bodyType []byte) []byte {
 }
 
 //解包
-func Depack(buffer []byte) ([]byte, []byte) {
+func Depack(buffer []byte) ([]byte, [][]byte) {
 	length := len(buffer)
-	record := make([]byte, 0)
+	records := make([][]byte, 0)
+
 	var i int
-	for i = 0; i < length; i = i + 1 {
+	for i = 0; i < length; i++ {
 		if length < i+HEADER_LEN {
 			break
 		}
@@ -67,14 +68,17 @@ func Depack(buffer []byte) ([]byte, []byte) {
 			if length < i+HEADER_LEN+l {
 				break
 			}
-			record = append(record, t...)
-			record = append(record, byteLen...)
-			record = append(record, buffer[i+HEADER_LEN:i+HEADER_LEN+l]...)
+			record := append([]byte(nil), buffer[i:i+HEADER_LEN+l]...)
+			records = append(records, record)
+			i += HEADER_LEN + l
 		}
 	}
-
+	i--
 	if i == length {
-		return make([]byte, 0), nil
+		return make([]byte, 0), records
 	}
-	return buffer[i:], record
+	if i < 0 {
+		i = 0
+	}
+	return buffer[i:], records
 }
