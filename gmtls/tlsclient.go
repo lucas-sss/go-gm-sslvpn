@@ -24,7 +24,7 @@ var gloablTunCfg tun.TunConfig
 
 // StartClient starts the tls client
 func StartClient(config config.Config) {
-	log.Println("vtun tls client started")
+	log.Println("tls client started")
 
 	// 信任的根证书
 	certPool := x509.NewCertPool()
