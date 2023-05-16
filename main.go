@@ -28,13 +28,13 @@ func main() {
 	flag.StringVar(&config.CIDRv6, "cidr6", "fced:9999::9999/64", "tun interface ipv6 cidr")
 	flag.IntVar(&config.MTU, "mtu", 1500, "tun mtu")
 	flag.StringVar(&config.LocalAddr, "local", ":3001", "bind to local address")
-	flag.StringVar(&config.RemoteAddr, "remote", ":3001", "remote server address")
+	flag.StringVar(&config.RemoteAddr, "remote", "", "remote server address")
 
-	flag.Func("route", "push ipv4 route to client", func(s string) error {
+	flag.Func("route", "push ipv4 route to client, value example: 192.168.11.0/24,192.168.13.0/24", func(s string) error {
 		config.Route = strings.Split(s, ",")
 		return nil
 	})
-	flag.Func("route6", "push ipv6 route to client", func(s string) error {
+	flag.Func("route6", "push ipv6 route to client, value example: 2001:250:4000:2000::1/64", func(s string) error {
 		config.Route6 = strings.Split(s, ",")
 		return nil
 	})
@@ -53,8 +53,11 @@ func main() {
 	flag.StringVar(&config.TLSSni, "sni", "", "tls handshake sni")
 	flag.BoolVar(&config.TLSInsecureSkipVerify, "isv", false, "tls insecure skip verify")
 	flag.StringVar(&config.TLSCipher, "cipher", "SM2_WITH_SM4_SM3", "tls cipher suites")
-	flag.BoolVar(&config.Verbose, "v", false, "enable verbose output")
 	flag.Parse()
+
+	if config.RemoteAddr == "" {
+		config.ServerMode = true
+	}
 
 	app := app.NewApp(&config, _version)
 	app.InitConfig()

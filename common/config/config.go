@@ -39,7 +39,6 @@ type Config struct {
 	TLSInsecureSkipVerify     bool   //是否跳过证书验证
 	TLSCipher                 string //tls 密码套件
 	BufferSize                int
-	Verbose                   bool
 
 	Route  []string //推送客户端的ipv4路由
 	Route6 []string //推送客户端的ipv6路由

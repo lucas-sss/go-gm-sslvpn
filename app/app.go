@@ -9,6 +9,7 @@
 package app
 
 import (
+	"encoding/json"
 	"log"
 	"net"
 	"strconv"
@@ -55,7 +56,8 @@ func (app *App) InitConfig() {
 	app.Config.LocalGateway6 = netutil.DiscoverGateway(false)
 	app.Config.BufferSize = 64 * 1024
 
-	log.Printf("initialized app config: %+v", app.Config)
+	s, _ := json.MarshalIndent(app.Config, "", "\t")
+	log.Printf("initialized app config: \n%s", s)
 	//校验配置参数
 	if !checkConfig(app.Config) {
 		log.Panicln("illegal app config")

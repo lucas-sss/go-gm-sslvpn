@@ -12,7 +12,6 @@ import (
 	"gmvpn/common/cache"
 	"gmvpn/common/config"
 	"gmvpn/common/counter"
-	"gmvpn/common/netutil"
 	"gmvpn/tun"
 
 	"github.com/golang/snappy"
@@ -62,7 +61,6 @@ func StartClient(config config.Config) {
 		conn, err := gmtls.Dial("tcp", config.RemoteAddr, cf)
 		if err != nil {
 			time.Sleep(3 * time.Second)
-			netutil.PrintErr(err, config.Verbose)
 			continue
 		}
 		log.Println("connect to server success")
@@ -80,7 +78,7 @@ func tunToTLS(appCfg config.Config, iface *water.Interface) {
 	for {
 		n, err := iface.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, appCfg.Verbose)
+			log.Println("tun iface read err, ", err)
 			break
 		}
 		if v, ok := cache.GetCache().Get("tlsconn"); ok {
@@ -94,7 +92,7 @@ func tunToTLS(appCfg config.Config, iface *water.Interface) {
 			conn := v.(*gmtls.Conn)
 			_, err = conn.Write(b)
 			if err != nil {
-				netutil.PrintErr(err, appCfg.Verbose)
+				log.Println("tls coon write err, ", err)
 				continue
 			}
 			counter.IncrWrittenBytes(n)
@@ -119,7 +117,7 @@ func tlsToTun(appCfg config.Config, tlsconn *gmtls.Conn) {
 	for {
 		n, err := tlsconn.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, appCfg.Verbose)
+			log.Println("tls conn read err, ", err)
 			break
 		}
 		//解包处理
@@ -141,13 +139,13 @@ func tlsToTun(appCfg config.Config, tlsconn *gmtls.Conn) {
 				if appCfg.Compress {
 					b, err = snappy.Decode(nil, b)
 					if err != nil {
-						netutil.PrintErr(err, appCfg.Verbose)
+						log.Println("snappy decode read err, ", err)
 						break
 					}
 				}
 				_, err = iface.Write(b)
 				if err != nil {
-					netutil.PrintErr(err, appCfg.Verbose)
+					log.Println("tun iface write err, ", err)
 					break
 				}
 				counter.IncrReadBytes(n)

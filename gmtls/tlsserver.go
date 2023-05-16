@@ -36,7 +36,7 @@ func StartServer(iface *water.Interface, appCfg config.Config, tunCfg tun.TunCon
 		log.Println("server tun interface close")
 		iface.Close()
 	}()
-	log.Printf("vtun tls server started on %v", appCfg.LocalAddr)
+	log.Printf("tls server started on %v", appCfg.LocalAddr)
 
 	clientConnCache = common.NewRWMutexMap(1024)
 
@@ -83,6 +83,7 @@ func StartServer(iface *water.Interface, appCfg config.Config, tunCfg tun.TunCon
 	// server -> client
 	go toClient(appCfg, iface)
 	// client -> server
+	log.Println("wait client connection request...")
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -137,7 +138,7 @@ func pushTunConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Conn)
 	return nil
 }
 
-//分配虚拟ip
+// 分配虚拟ip
 func allocateVip(coon net.Conn, appCfg config.Config) (string, error) {
 	id := coon.RemoteAddr().String()
 	vipPool := appCfg.VipPool
@@ -167,7 +168,7 @@ func allocateVip(coon net.Conn, appCfg config.Config) (string, error) {
 	return "", fmt.Errorf("insufficient virtual ip")
 }
 
-//推送路由陪孩子
+// 推送路由陪孩子
 func pushRouteConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Conn) error {
 	log.Printf("push route config")
 	routeCfg := tun.RouteConfig{
@@ -195,12 +196,11 @@ func pushRouteConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Con
 
 // toClient sends packets from iface to tlsconn
 func toClient(config config.Config, iface *water.Interface) {
-	log.Println("listening tun data")
 	packet := make([]byte, config.BufferSize)
 	for {
 		n, err := iface.Read(packet)
 		if err != nil {
-			netutil.PrintErr(err, config.Verbose)
+			log.Println("tun iface read err, ", err)
 			continue
 		}
 		b := packet[:n]
@@ -258,7 +258,7 @@ func toServer(config config.Config, tlsconn net.Conn, iface *water.Interface) {
 				if config.Compress {
 					b, err = snappy.Decode(nil, b)
 					if err != nil {
-						netutil.PrintErr(err, config.Verbose)
+						log.Println("snappy decode err, ", err)
 						break
 					}
 				}
