@@ -71,6 +71,8 @@ func configServerTun(config TunConfig) {
 		netutil.ExecCmd("/sbin/ip", "addr", "add", config.Cidr, "dev", config.Device)
 		netutil.ExecCmd("/sbin/ip", "-6", "addr", "add", config.Cidr6, "dev", config.Device)
 		netutil.ExecCmd("/sbin/ip", "link", "set", "dev", config.Device, "up")
+		//设置mtu
+		netutil.ExecCmd("ifconfig", config.Device, "mtu", strconv.Itoa(config.Mtu))
 	} else {
 		log.Printf("not support os %v", os)
 		return
@@ -97,10 +99,14 @@ func configClientTun(config TunConfig) {
 				netutil.ExecCmd("/sbin/ip", "-6", "route", "add", "::/1", "dev", config.Device)
 			}
 		}
-
+		//设置mtu
+		netutil.ExecCmd("ifconfig", config.Device, "mtu", strconv.Itoa(config.Mtu))
 	} else if os == "darwin" {
 		netutil.ExecCmd("ifconfig", config.Device, "inet", config.CVip, config.SVip, "up")
 		// netutil.ExecCmd("ifconfig", config.Device, "inet6", config.CVip6, config.SVip6, "up")
+
+		//设置mtu networksetup -setMTU en0 1453
+		netutil.ExecCmd("networksetup", "-setMTU", config.Device, "mtu", strconv.Itoa(config.Mtu))
 		if config.GlobalMode && physicalIface != "" {
 			if config.LocalGateway != "" {
 				netutil.ExecCmd("route", "add", "default", config.SVip)
@@ -115,6 +121,8 @@ func configClientTun(config TunConfig) {
 			}
 		}
 	} else if os == "windows" {
+		// 设置mtu
+		// netsh interface ipv4 set subinterface "需修改的连接名" mtu=值 store=persistent
 		if config.GlobalMode && physicalIface != "" {
 			if config.LocalGateway != "" {
 				netutil.ExecCmd("cmd", "/C", "route", "delete", "0.0.0.0", "mask", "0.0.0.0")

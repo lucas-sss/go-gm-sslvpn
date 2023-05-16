@@ -1,0 +1,56 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2 (0x2)
+    Signature Algorithm: sm2sign-with-sm3
+        Issuer: C=CN, ST=ZJ, L=HZ, O=FLK, OU=FLK_sslvpn, CN=RootCA/emailAddress=fulankeservices@flksec.com
+        Validity
+            Not Before: Aug 17 06:38:17 2021 GMT
+            Not After : Aug 15 06:38:17 2031 GMT
+        Subject: C=CN, ST=ZJ, O=FLK, OU=FLK_sslvpn, CN=ServerSig/emailAddress=sslvpn@flksec.com
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (256 bit)
+                pub:
+                    04:7e:40:6d:58:c0:f7:e7:47:67:e6:a8:7a:f2:5a:
+                    93:69:55:6e:43:f7:fd:75:16:1c:f7:73:02:81:93:
+                    73:c4:df:bc:a6:f0:b1:d0:b3:4f:58:8a:4c:84:9d:
+                    90:11:08:f2:2a:f0:e3:2a:7b:23:bd:54:73:55:9a:
+                    0d:d5:22:ce:8e
+                ASN1 OID: sm2p256v1
+                NIST CURVE: SM2
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature
+            Netscape Comment: 
+                GmSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                C5:AA:B1:F2:0E:0F:4D:F7:6F:60:CB:3F:9D:F6:C2:60:61:E9:49:D2
+            X509v3 Authority Key Identifier: 
+                keyid:F4:50:6E:B2:48:DE:11:6E:D8:ED:23:49:B9:51:F9:25:56:04:71:FF
+
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication, TLS Web Client Authentication
+    Signature Algorithm: sm2sign-with-sm3
+         30:44:02:20:2c:e5:73:2e:37:37:5f:d4:e7:fb:70:a6:07:d1:
+         bd:2f:3a:dc:71:2c:a8:6b:49:13:9e:c4:6f:43:ef:61:76:47:
+         02:20:4a:e6:02:34:87:c2:ff:3f:54:49:ca:bc:dd:96:26:12:
+         24:e5:8f:f3:20:47:47:de:56:37:71:f2:89:3d:09:7e
+-----BEGIN CERTIFICATE-----
+MIICjzCCAjagAwIBAgIBAjAKBggqgRzPVQGDdTCBhjELMAkGA1UEBhMCQ04xCzAJ
+BgNVBAgMAlpKMQswCQYDVQQHDAJIWjEMMAoGA1UECgwDRkxLMRMwEQYDVQQLDApG
+TEtfc3NsdnBuMQ8wDQYDVQQDDAZSb290Q0ExKTAnBgkqhkiG9w0BCQEWGmZ1bGFu
+a2VzZXJ2aWNlc0BmbGtzZWMuY29tMB4XDTIxMDgxNzA2MzgxN1oXDTMxMDgxNTA2
+MzgxN1owczELMAkGA1UEBhMCQ04xCzAJBgNVBAgMAlpKMQwwCgYDVQQKDANGTEsx
+EzARBgNVBAsMCkZMS19zc2x2cG4xEjAQBgNVBAMMCVNlcnZlclNpZzEgMB4GCSqG
+SIb3DQEJARYRc3NsdnBuQGZsa3NlYy5jb20wWTATBgcqhkjOPQIBBggqgRzPVQGC
+LQNCAAR+QG1YwPfnR2fmqHryWpNpVW5D9/11Fhz3cwKBk3PE37ym8LHQs09YikyE
+nZARCPIq8OMqeyO9VHNVmg3VIs6Oo4GmMIGjMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgeAMCoGCWCGSAGG+EIBDQQdFhtHbVNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUw
+HQYDVR0OBBYEFMWqsfIOD033b2DLP532wmBh6UnSMB8GA1UdIwQYMBaAFPRQbrJI
+3hFu2O0jSblR+SVWBHH/MB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAK
+BggqgRzPVQGDdQNHADBEAiAs5XMuNzdf1Of7cKYH0b0vOtxxLKhrSROexG9D72F2
+RwIgSuYCNIfC/z9UScq83ZYmEiTlj/MgR0feVjdx8ok9CX4=
+-----END CERTIFICATE-----

@@ -39,6 +39,7 @@ func main() {
 		return nil
 	})
 	flag.BoolVar(&config.ServerMode, "s", false, "server mode")
+	flag.BoolVar(&config.AutoSnat, "autonat", true, "open iptables auto snat on server mode")
 	flag.BoolVar(&config.GlobalMode, "g", false, "client global mode")
 	flag.BoolVar(&config.Compress, "compress", false, "enable data compression")
 	flag.IntVar(&config.Timeout, "t", 30, "dial timeout in seconds")

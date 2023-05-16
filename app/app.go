@@ -131,10 +131,28 @@ func checkConfig(cfg *config.Config) bool {
 	return true
 }
 
+// 添加iptable自动snat转换
+func addIptablesSnat(cidr, cidr6 string, rs, r6s []string) {
+	if rs != nil {
+		existSnat := netutil.CheckExistSNat()
+		for _, route := range rs {
+			if _, ok := existSnat[route]; ok {
+				log.Printf("already exist ipv4 snat %s, ignore processing\n", route)
+				continue
+			}
+			//iptables -t nat ${op} POSTROUTING -s ${s} ${d} -j MASQUERADE
+			netutil.ExecCmd("iptables", "-t", "nat", "-I", "POSTROUTING", "-s", cidr, route, "-j", "MASQUERADE")
+		}
+	}
+}
+
 // StartApp starts the app
 func (app *App) StartApp() {
 	if app.Config.ServerMode {
 		iface, tunCfg := serverCreateTun(app.Config)
+		if app.Config.AutoSnat { //配置了自动snat转换
+			addIptablesSnat(tunCfg.Cidr, tunCfg.Cidr6, app.Config.Route, app.Config.Route6)
+		}
 		tls.StartServer(iface, *app.Config, *tunCfg)
 	} else {
 		tls.StartClient(*app.Config)

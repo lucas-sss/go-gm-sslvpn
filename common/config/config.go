@@ -23,6 +23,7 @@ type Config struct {
 	CIDR                      string //ipv4虚拟网络地址
 	CIDRv6                    string //ipv6虚拟网络地址
 	ServerMode                bool   //服务端模式
+	AutoSnat                  bool   //自动nat转换，只有在服务端模式下有效
 	GlobalMode                bool   //客户端是开启全局转发
 	Compress                  bool   //是否开启压缩
 	MTU                       int    //虚拟网卡mtu

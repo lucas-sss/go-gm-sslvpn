@@ -1,3 +1,7 @@
 .idea
 .DS_Store
 .vscode
+
+gmvpn-linux-amd64
+gmvpn-darwin-amd64
+gmvpn-win-amd64.exe
