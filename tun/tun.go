@@ -40,7 +40,8 @@ func CreatAndConfigTun(tunCfg *TunConfig) (iface *water.Interface) {
 	os := runtime.GOOS
 	if os == "windows" {
 		c.PlatformSpecificParams.Name = "vtun"
-		c.PlatformSpecificParams.Network = []string{tunCfg.Cidr, tunCfg.Cidr6}
+		//tunCfg.Cidr6
+		c.PlatformSpecificParams.Network = []string{tunCfg.Cidr}
 	}
 	if tunCfg.Device != "" {
 		c.PlatformSpecificParams.Name = tunCfg.Device
