@@ -143,6 +143,7 @@ func tlsToTun(appCfg config.Config, tlsconn *gmtls.Conn) {
 						break
 					}
 				}
+				// netutil.PrintEthernetFrame(b)
 				_, err = iface.Write(b)
 				if err != nil {
 					log.Println("tun iface write err, ", err)

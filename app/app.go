@@ -143,7 +143,7 @@ func addIptablesSnat(cidr, cidr6 string, rs, r6s []string) {
 				continue
 			}
 			//iptables -t nat ${op} POSTROUTING -s ${s} ${d} -j MASQUERADE
-			netutil.ExecCmd("iptables", "-t", "nat", "-I", "POSTROUTING", "-s", cidr, route, "-j", "MASQUERADE")
+			netutil.ExecCmd("iptables", "-t", "nat", "-I", "POSTROUTING", "-s", cidr, "-d", route, "-j", "MASQUERADE")
 		}
 	}
 }

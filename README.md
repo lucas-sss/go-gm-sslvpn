@@ -88,7 +88,7 @@ sudo ./vtun-drawin-amd64 -remote server-addr:port -isv
 ### Linux服务端
 
 ```
-sudo ./vtun-linux-amd64 -s -cidr :3001 
+sudo ./vtun-linux-amd64 -s -cidr 10.10.3.0/24 -local :3001 
 
 ```
 

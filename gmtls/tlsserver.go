@@ -161,6 +161,8 @@ func allocateVip(coon net.Conn, appCfg config.Config) (string, error) {
 		}
 		log.Printf("conn[%s] allocate vip: %s", id, vip)
 		clientConn := ClientConn{Vip: vip}
+		//提前缓存客户端ip信息,服务端可以直接ping通客户端
+		cache.GetCache().Set(vip, coon, 24*time.Hour)
 		//缓存客户端链接信息
 		clientConnCache.Set(id, clientConn)
 		return vip, nil
@@ -168,7 +170,7 @@ func allocateVip(coon net.Conn, appCfg config.Config) (string, error) {
 	return "", fmt.Errorf("insufficient virtual ip")
 }
 
-// 推送路由陪孩子
+// 推送路由配置
 func pushRouteConfig(appCfg config.Config, serTunCfg tun.TunConfig, coon net.Conn) error {
 	log.Printf("push route config")
 	routeCfg := tun.RouteConfig{
@@ -204,8 +206,11 @@ func toClient(config config.Config, iface *water.Interface) {
 			continue
 		}
 		b := packet[:n]
+		// netutil.PrintEthernetFrameData(b)
 		if key := netutil.GetDstKey(b); key != "" {
-			if v, ok := cache.GetCache().Get(key); ok {
+			// log.Println("des key: ", key)
+			v, ok := cache.GetCache().Get(key)
+			if ok {
 				if config.Compress {
 					b = snappy.Encode(nil, b)
 				}
@@ -218,6 +223,8 @@ func toClient(config config.Config, iface *water.Interface) {
 					continue
 				}
 				counter.IncrWrittenBytes(n)
+			} else {
+				log.Println("not find client for key: ", key)
 			}
 		}
 	}
