@@ -111,12 +111,12 @@ func configClientTun(config TunConfig) {
 		if config.GlobalMode && physicalIface != "" {
 			if config.LocalGateway != "" {
 				netutil.ExecCmd("route", "add", "default", config.SVip)
-				netutil.ExecCmd("route", "change", "default", config.SVip6)
+				netutil.ExecCmd("route", "change", "default", config.SVip)
 				netutil.ExecCmd("route", "add", "0.0.0.0/1", "-interface", config.Device)
 				netutil.ExecCmd("route", "add", "128.0.0.0/1", "-interface", config.Device)
 			}
 			if config.LocalGateway6 != "" {
-				netutil.ExecCmd("route", "add", "-inet6", "default", config.SVip)
+				netutil.ExecCmd("route", "add", "-inet6", "default", config.SVip6)
 				netutil.ExecCmd("route", "change", "-inet6", "default", config.SVip6)
 				netutil.ExecCmd("route", "add", "-inet6", "::/1", "-interface", config.Device)
 			}
