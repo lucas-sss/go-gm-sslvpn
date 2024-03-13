@@ -15,6 +15,14 @@ limitations under the License.
 
 package sm3
 
+// /*
+// #cgo darwin LDFLAGS: ${SRCDIR}/../sdf/lib/darwin/libgmssl.3.0.dylib
+// #cgo CFLAGS: -g -O2 -I$/usr/local/include/
+
+// #include "gmssl/sm3.h"
+// */
+// import "C"
+
 import (
 	"encoding/binary"
 	"hash"
@@ -119,7 +127,8 @@ func (sm3 *SM3) update(msg []byte) {
 	}
 	sm3.digest[0], sm3.digest[1], sm3.digest[2], sm3.digest[3], sm3.digest[4], sm3.digest[5], sm3.digest[6], sm3.digest[7] = a, b, c, d, e, f, g, h
 }
-func (sm3 *SM3) update2(msg []byte,) [8]uint32 {
+
+func (sm3 *SM3) update2(msg []byte) [8]uint32 {
 	var w [68]uint32
 	var w1 [64]uint32
 
@@ -256,4 +265,11 @@ func Sm3Sum(data []byte) []byte {
 	sm3.Reset()
 	_, _ = sm3.Write(data)
 	return sm3.Sum(nil)
+	// println("sm3 sdf env")
+
+	// var hash [32]byte
+	// b := data[:]
+
+	// C.sm3_digest((*C.uchar)(unsafe.Pointer(&b[0])), C.ulong(len(data)), (*C.uchar)(unsafe.Pointer(&hash[0])))
+	// return hash[:]
 }

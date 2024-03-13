@@ -18,6 +18,14 @@ modified by Jack, 2017 Oct
 
 package sm4
 
+// /*
+// #cgo darwin LDFLAGS: ${SRCDIR}/../sdf/lib/darwin/libgmssl.3.0.dylib
+// #cgo CFLAGS: -g -O2 -I$/usr/local/include/
+
+// #include "gmssl/sm4.h"
+// */
+// import "C"
+
 import (
 	"bytes"
 	"crypto/cipher"
@@ -26,14 +34,17 @@ import (
 )
 
 const BlockSize = 16
-var IV=make([]byte,BlockSize)
+
+var IV = make([]byte, BlockSize)
+
 type SM4Key []byte
 
 // Cipher is an instance of SM4 encryption.
 type Sm4Cipher struct {
-	subkeys []uint32
-	block1  []uint32
-	block2  []byte
+	originKey []byte //原始密钥
+	subkeys   []uint32
+	block1    []uint32
+	block2    []byte
 }
 
 // sm4密钥参量
@@ -234,6 +245,8 @@ func NewCipher(key []byte) (cipher.Block, error) {
 		return nil, errors.New("SM4: invalid key size " + strconv.Itoa(len(key)))
 	}
 	c := new(Sm4Cipher)
+	c.originKey = make([]byte, BlockSize)
+	copy(c.originKey, key)
 	c.subkeys = generateSubKeys(key)
 	c.block1 = make([]uint32, 4)
 	c.block2 = make([]byte, 16)
@@ -245,16 +258,16 @@ func (c *Sm4Cipher) BlockSize() int {
 }
 
 func (c *Sm4Cipher) Encrypt(dst, src []byte) {
+	// hexKey := hex.EncodeToString(c.originKey)
+	// fmt.Printf("sm4 encrypt, key: %s\n", hexKey)
 	cryptBlock(c.subkeys, c.block1, c.block2, dst, src, false)
 }
 
-
-
 func (c *Sm4Cipher) Decrypt(dst, src []byte) {
+	// hexKey := hex.EncodeToString(c.originKey)
+	// fmt.Printf("sm4 decrypt, key: %s\n", hexKey)
 	cryptBlock(c.subkeys, c.block1, c.block2, dst, src, true)
 }
-
-
 
 func xor(in, iv []byte) (out []byte) {
 	if len(in) != len(iv) {
@@ -290,12 +303,12 @@ func pkcs7UnPadding(src []byte) ([]byte, error) {
 
 	return src[:(length - unpadding)], nil
 }
-func SetIV(iv []byte)error{
-      if len(iv)!=BlockSize{
-          return errors.New("SM4: invalid iv size")
-	  }
-	  IV=iv
-	  return nil
+func SetIV(iv []byte) error {
+	if len(iv) != BlockSize {
+		return errors.New("SM4: invalid iv size")
+	}
+	IV = iv
+	return nil
 }
 
 func Sm4Cbc(key []byte, in []byte, mode bool) (out []byte, err error) {
@@ -308,8 +321,8 @@ func Sm4Cbc(key []byte, in []byte, mode bool) (out []byte, err error) {
 	} else {
 		inData = in
 	}
-    iv:=make([]byte,BlockSize)
-	copy(iv,IV)
+	iv := make([]byte, BlockSize)
+	copy(iv, IV)
 	out = make([]byte, len(inData))
 	c, err := NewCipher(key)
 	if err != nil {
